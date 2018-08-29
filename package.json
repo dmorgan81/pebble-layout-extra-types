@@ -1,0 +1,28 @@
+{
+  "name": "pebble-layout-extra-types",
+  "author": "MakeAwesomeHappen",
+  "version": "1.0.0",
+  "files": [
+    "dist.zip"
+  ],
+  "keywords": [
+    "pebble-package"
+  ],
+  "dependencies": {
+    "pebble-events": "^1.2.0",
+    "pebble-layout": "^2.0.1"
+  },
+  "pebble": {
+    "projectType": "package",
+    "sdkVersion": "3",
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
