@@ -88,3 +88,56 @@ void layout_add_date_time_type(Layout *layout) {
         .cast = prv_date_time_layer_cast
     }, "TextLayer");
 }
+
+struct BatteryLayerData {
+    TextLayer *layer;
+    char buf[8];
+    EventHandle *event_handle;
+};
+
+static void prv_battery_layer_event_handler(BatteryChargeState charge_state, void *context) {
+    struct BatteryLayerData *data = (struct BatteryLayerData *) context;
+    snprintf(data->buf, sizeof(data->buf), "%d%%", charge_state.charge_percent);
+    text_layer_set_text(data->layer, data->buf);
+}
+
+static void *prv_battery_layer_create(GRect frame) {
+    struct BatteryLayerData *data = malloc(sizeof(struct BatteryLayerData));
+    data->layer = text_layer_create(frame);
+
+    prv_battery_layer_event_handler(battery_state_service_peek(), data);
+    data->event_handle = events_battery_state_service_subscribe_context(prv_battery_layer_event_handler, data);
+
+    return data;
+}
+
+static void prv_battery_layer_destroy(void *object) {
+    struct BatteryLayerData *data = (struct BatteryLayerData *) object;
+
+    events_battery_state_service_unsubscribe(data->event_handle);
+    data->event_handle = NULL;
+
+    text_layer_destroy(data->layer);
+    data->layer = NULL;
+
+    free(data);
+}
+
+static Layer *prv_battery_layer_get_layer(void *object) {
+    struct BatteryLayerData *data = (struct BatteryLayerData *) object;
+    return text_layer_get_layer(data->layer);
+}
+
+static void *prv_battery_layer_cast(void *object) {
+    struct BatteryLayerData *data = (struct BatteryLayerData *) object;
+    return data->layer;
+}
+
+void layout_add_battery_type(Layout *layout) {
+    layout_add_type(layout, "BatteryLayer", (TypeFuncs) {
+        .create = prv_battery_layer_create,
+        .destroy = prv_battery_layer_destroy,
+        .get_layer = prv_battery_layer_get_layer,
+        .cast = prv_battery_layer_cast
+    }, "TextLayer");
+}
