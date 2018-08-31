@@ -141,3 +141,70 @@ void layout_add_battery_type(Layout *layout) {
         .cast = prv_battery_layer_cast
     }, "TextLayer");
 }
+
+struct ConnectionToggleData {
+    bool show_on_connected;
+    EventHandle event_handle;
+};
+
+static void *prv_connection_toggle_create(GRect frame) {
+    return layer_create_with_data(frame, sizeof(struct ConnectionToggleData));
+}
+
+static void prv_connection_toggle_destroy(void *object) {
+    Layer *layer = (Layer *) object;
+    struct ConnectionToggleData *data = layer_get_data(layer);
+
+    events_connection_service_unsubscribe(data->event_handle);
+    data->event_handle = NULL;
+
+    layer_destroy(layer);
+}
+
+static void prv_connection_toggle_connection_handler(bool connected, void *context) {
+    Layer *layer = (Layer *) context;
+    struct ConnectionToggleData *data = layer_get_data(layer);
+    layer_set_hidden(layer, data->show_on_connected ? !connected : connected);
+}
+
+static void prv_connection_toggle_parse(Layout *layout, Json *json, void *object) {
+    Layer *layer = (Layer *) object;
+    struct ConnectionToggleData *data = layer_get_data(layer);
+
+    EventConnectionHandlers handlers;
+    handlers.pebble_app_connection_handler = prv_connection_toggle_connection_handler;
+    handlers.pebblekit_connection_handler = NULL;
+    bool connected = connection_service_peek_pebble_app_connection();
+    size_t size = json_get_size(json);
+    for (size_t i = 0; i < size; i++) {
+        char *key = json_next_string(json);
+        if (eq(key, "state")) {
+            char *value = json_next_string(json);
+            if (eq(value, "show")) data->show_on_connected = true;
+            else data->show_on_connected = false;
+            free(value);
+        } else if (eq(key, "source")) {
+            char *value = json_next_string(json);
+            if (eq(value, "pebblekit")) {
+                handlers.pebble_app_connection_handler = NULL;
+                handlers.pebblekit_connection_handler = prv_connection_toggle_connection_handler;
+                connected = connection_service_peek_pebblekit_connection();
+            }
+            free(value);
+        } else {
+            json_skip_tree(json);
+        }
+        free(key);
+    }
+
+    prv_connection_toggle_connection_handler(connected, layer);
+    data->event_handle = events_connection_service_subscribe_context(handlers, layer);
+}
+
+void layout_add_connection_toggle_type(Layout *layout) {
+    layout_add_type(layout, "ConnectionToggle", (TypeFuncs) {
+        .create = prv_connection_toggle_create,
+        .destroy = prv_connection_toggle_destroy,
+        .parse = prv_connection_toggle_parse
+    }, NULL);
+}

@@ -1,6 +1,6 @@
 {
   "name": "pebble-layout-extra-types",
-  "author": "MakeAwesomeHappen",
+  "author": "David Morgan",
   "version": "1.0.0",
   "files": [
     "dist.zip"
@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "pebble-events": "^1.2.0",
-    "pebble-layout": "^2.0.1"
+    "pebble-layout": "^2.1.0"
   },
   "pebble": {
     "projectType": "package",
